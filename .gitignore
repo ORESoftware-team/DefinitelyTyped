@@ -49,3 +49,7 @@ npm-debug.log
 
 # yarn
 yarn.lock
+tmp
+temp
+tmp/worktrees
+temp/worktrees
