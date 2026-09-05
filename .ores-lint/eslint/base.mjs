@@ -7,6 +7,7 @@
  * to hundreds of heterogeneous repos must never be the thing that breaks them.
  */
 
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import oresPlugin from './plugin.mjs';
@@ -61,6 +62,19 @@ async function loadTsSupport() {
 const JS_FILES = ['**/*.js', '**/*.mjs', '**/*.cjs', '**/*.jsx'];
 const TS_FILES = ['**/*.ts', '**/*.mts', '**/*.cts', '**/*.tsx'];
 
+/**
+ * Directories that are separate git repositories nested inside this one. They
+ * have their own ores-lint install and must not be linted from here, or their
+ * findings would be reported twice under the wrong repo.
+ */
+function nestedRepoIgnores() {
+  try {
+    const raw = readFileSync(new URL('../nested-repos.json', import.meta.url), 'utf8');
+    const dirs = JSON.parse(raw);
+    return Array.isArray(dirs) ? dirs.map((d) => `${d}/**`) : [];
+  } catch { return []; }
+}
+
 const IGNORES = [
   '**/node_modules/**', '**/dist/**', '**/build/**', '**/out/**', '**/target/**',
   '**/coverage/**', '**/.next/**', '**/vendor/**', '**/*.min.js', '**/*.bundle.js',
@@ -109,7 +123,7 @@ export default async function oresConfig(opts = {}) {
   };
 
   const configs = [
-    { ignores: [...IGNORES, ...(opts.ignores || [])] },
+    { ignores: [...IGNORES, ...nestedRepoIgnores(), ...(opts.ignores || [])] },
     {
       files: JS_FILES,
       plugins: { ores: oresPlugin },
